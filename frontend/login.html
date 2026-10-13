@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SwiftOrder — Autentificare</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <main>
+        <section>
+            <h1>Autentificare personal</h1>
+
+            <form id="login-form" method="post" action="/auth/login">
+                <label for="username">Username</label>
+                <input
+                    id="username"
+                    name="username"
+                    type="text"
+                    autocomplete="username"
+                    required
+                >
+
+                <label for="password">Parolă</label>
+                <input
+                    id="password"
+                    name="password"
+                    type="password"
+                    autocomplete="current-password"
+                    required
+                >
+
+                <button type="submit">Intră în cont</button>
+                <p id="login-message" role="status"></p>
+            </form>
+        </section>
+    </main>
+    <script src="/static/login.js"></script>
+</body>
+</html>

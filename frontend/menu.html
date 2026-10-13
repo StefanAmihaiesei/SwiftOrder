@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Restaurant Demo — Meniu</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="menu-page">
+    <header class="restaurant-header">
+        <div class="restaurant-header-inner">
+            <div class="restaurant-brand">
+                <span class="restaurant-logo" aria-hidden="true">R</span>
+                <div>
+                    <h1>Restaurant Demo</h1>
+                    <p class="brand-credit">Powered by <strong>SwiftOrder</strong></p>
+                    <p id="table-info">Se identifică masa...</p>
+                </div>
+            </div>
+            <button id="open-cart" type="button" aria-haspopup="dialog" aria-controls="cart-dialog" hidden>
+                <span class="cart-button-label">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+                        <path d="M3 3h2l3 12h10l3-9H6" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="9" cy="20" r="1"/><circle cx="18" cy="20" r="1"/>
+                    </svg>
+                    Coș <span id="cart-count">0</span>
+                </span>
+                <span id="cart-button-total">0 lei</span>
+            </button>
+        </div>
+    </header>
+
+    <main>
+        <section class="menu-section">
+            <h2>Meniu</h2>
+            <p class="menu-intro">Ce îți face poftă astăzi?</p>
+
+            <div id="menu-groups" aria-label="Tip de meniu">
+                <button id="show-food" type="button">Mâncare</button>
+                <button id="show-drinks" type="button">Băuturi</button>
+            </div>
+
+            <div id="categories" aria-label="Categorii"></div>
+
+            <h3 id="category-title"></h3>
+            <div id="products">
+                <p>Se încarcă meniul...</p>
+            </div>
+        </section>
+
+        <div id="cart-desktop-slot" hidden>
+            <section id="cart-section" hidden>
+                <div class="cart-heading">
+                    <h2 id="cart-title">Coșul tău</h2>
+                    <button id="close-cart" type="button" aria-label="Închide coșul">×</button>
+                </div>
+                <p class="cart-intro">Verifică produsele înainte de a comanda.</p>
+                <div id="cart"><p>Coșul este gol.</p></div>
+                <div class="cart-footer">
+                    <p class="cart-total"><span>Total</span><strong id="cart-total">0 lei</strong></p>
+                    <button id="place-order" type="button" disabled>Plasează comanda</button>
+                </div>
+            </section>
+        </div>
+    </main>
+    <dialog id="cart-dialog" aria-labelledby="cart-title"></dialog>
+    <script src="/static/menu.js"></script>
+</body>
+</html>
