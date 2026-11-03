@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Restaurant Demo — Comenzi</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/style.css?v=bistro-2">
 </head>
 <body class="admin-page">
     <header class="restaurant-header">
@@ -31,12 +31,15 @@
                    aria-pressed="false">
                     Gestionare meniu
              </button>
+            <button id="show-tables" type="button" aria-pressed="false">Mese și QR</button>
+            <button id="show-staff" type="button" aria-pressed="false">Personal</button>
         </nav>
         <section id="orders-section" class="admin-section">
             <div class="admin-heading">
                 <div>
+                    <p class="eyebrow">În sală</p>
                     <h2>Comenzi</h2>
-                    <p>De la prima comandă până la ultima masă servită.</p>
+                    <p>Tot ce se pregătește, dintr-o privire.</p>
                 </div>
                 <p id="refresh-status">Se conectează...</p>
             </div>
@@ -58,13 +61,41 @@
         </section>
         <section id="menu-management-section" class="admin-section" hidden>
             <div class="admin-heading">
-                <h2>Gestionare meniu</h2>
+                <div><p class="eyebrow">Din bucătărie &amp; bar</p><h2>Gestionare meniu</h2></div>
                 <button id="add-product" type="button">Adaugă produs</button>
             </div>
             <p id="menu-message" role="status" hidden></p>
              <div id="managed-products"></div>
         </section>
+        <section id="tables-section" class="admin-section" hidden>
+            <p class="eyebrow">În sală</p><h2>Mese și coduri QR</h2>
+            <p>Descarcă QR-ul fiecărei mese pentru imprimare. Pentru telefon, adresa trebuie să fie accesibilă din aceeași rețea.</p>
+            <form id="table-form" class="compact-form">
+                <label for="table-number">Numărul mesei</label>
+                <input id="table-number" type="number" min="1" max="9999" required>
+                <button type="submit">Adaugă masă</button>
+            </form>
+            <p id="tables-message" role="status"></p>
+            <div id="managed-tables" class="management-grid"></div>
+        </section>
+        <section id="staff-section" class="admin-section" hidden>
+            <p class="eyebrow">Echipa</p><h2>Personal</h2>
+            <p>Ospătarii gestionează comenzile. Managerii au acces și la meniu, mese și conturi.</p>
+            <form id="staff-form" class="compact-form">
+                <label for="staff-username">Username nou</label>
+                <input id="staff-username" maxlength="80" autocomplete="off" required>
+                <label for="staff-password">Parolă (minimum 10 caractere)</label>
+                <input id="staff-password" type="password" minlength="10" maxlength="256" autocomplete="new-password" required>
+                <label for="staff-role">Rol</label>
+                <select id="staff-role"><option value="WAITER">Ospătar</option><option value="MANAGER">Manager</option></select>
+                <button type="submit">Creează cont</button>
+            </form>
+            <p id="staff-message" role="status"></p>
+            <div id="managed-staff" class="management-grid"></div>
+        </section>
     </main>
+
+    <footer class="page-footer"><span>Spațiul personalului</span><span>Powered by SwiftOrder</span></footer>
 
     <dialog id="product-editor" aria-labelledby="product-editor-title">
         <form id="product-form">
@@ -74,9 +105,8 @@
                 <label for="product-name">Nume</label>
                 <input id="product-name" type="text" maxlength="120" required>
                 <label for="product-category">Categorie</label>
-                <select id="product-category" required>
-                    <option value="Altele">Altele</option>
-                </select>
+                <input id="product-category" list="product-categories" maxlength="80" required>
+                <datalist id="product-categories"></datalist>
                 <label for="product-price">Preț (lei)</label>
                 <input id="product-price" type="number" inputmode="decimal" min="0" step="0.01" required>
                 <label class="availability-field" for="product-available">
@@ -90,6 +120,8 @@
             </div>
         </form>
     </dialog>
+    <script src="/static/brand.js"></script>
     <script src="/static/admin.js"></script>
+    <script src="/static/management.js"></script>
 </body>
 </html>

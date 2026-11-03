@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Restaurant Demo — Meniu</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/style.css?v=bistro-2">
 </head>
 <body class="menu-page">
     <header class="restaurant-header">
@@ -32,16 +32,27 @@
 
     <main>
         <section class="menu-section">
-            <h2>Meniu</h2>
-            <p class="menu-intro">Ce îți face poftă astăzi?</p>
+            <div class="menu-heading">
+                <div>
+                    <p class="eyebrow">Bine ai venit</p>
+                    <h2>Meniul nostru</h2>
+                    <p class="menu-intro">Ce îți face poftă astăzi?</p>
+                </div>
+                <div class="menu-search-field">
+                    <label class="visually-hidden" for="menu-search">Caută în meniu</label>
+                    <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 5 5"/></svg>
+                    <input id="menu-search" type="search" placeholder="Caută în meniu" maxlength="120">
+                </div>
+            </div>
 
-            <div id="menu-groups" aria-label="Tip de meniu">
+            <div id="menu-groups" role="group" aria-label="Tip de meniu">
                 <button id="show-food" type="button">Mâncare</button>
                 <button id="show-drinks" type="button">Băuturi</button>
             </div>
 
-            <div id="categories" aria-label="Categorii"></div>
+            <div id="categories" role="group" aria-label="Categorii"></div>
 
+            <p id="order-message" role="status" aria-live="polite"></p>
             <h3 id="category-title"></h3>
             <div id="products">
                 <p>Se încarcă meniul...</p>
@@ -51,10 +62,10 @@
         <div id="cart-desktop-slot" hidden>
             <section id="cart-section" hidden>
                 <div class="cart-heading">
-                    <h2 id="cart-title">Coșul tău</h2>
+                    <h2 id="cart-title">Comanda ta</h2>
                     <button id="close-cart" type="button" aria-label="Închide coșul">×</button>
                 </div>
-                <p class="cart-intro">Verifică produsele înainte de a comanda.</p>
+                <p class="cart-intro">Ceva bun, pentru masa ta.</p>
                 <div id="cart"><p>Coșul este gol.</p></div>
                 <div class="cart-footer">
                     <p class="cart-total"><span>Total</span><strong id="cart-total">0 lei</strong></p>
@@ -64,6 +75,8 @@
         </div>
     </main>
     <dialog id="cart-dialog" aria-labelledby="cart-title"></dialog>
-    <script src="/static/menu.js"></script>
+    <footer class="page-footer"><span>Mâncare &amp; băuturi</span><span>Powered by SwiftOrder</span></footer>
+    <script src="/static/brand.js"></script>
+    <script src="/static/menu.js?v=bistro-1"></script>
 </body>
 </html>

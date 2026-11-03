@@ -3,6 +3,36 @@ const qrToken = params.get("token");
 let isSubmitting = false;
 let tableIsValid = false;
 const cart = [];
+const storageKey = "swiftorder-cart:" + (qrToken || "preview");
+const orderMessage = document.getElementById("order-message");
+const searchInput = document.getElementById("menu-search");
+let pendingOrder = null;
+
+function saveCart() {
+    try {
+        localStorage.setItem(storageKey, JSON.stringify({items: cart, pendingOrder}));
+    } catch (_) { /* Ordering still works when browser storage is unavailable. */ }
+}
+
+function restoreCart() {
+    try {
+        const saved = JSON.parse(localStorage.getItem(storageKey) || "null");
+        if (!saved || !Array.isArray(saved.items) || !tableIsValid) return;
+        for (const item of saved.items.slice(0, 100)) {
+            const product = products.find(product => product.id === item.id && product.available === 1);
+            if (product && Number.isInteger(item.quantity) && item.quantity > 0 && item.quantity <= 99) {
+                cart.push({...product, quantity: item.quantity});
+            }
+        }
+        if (saved.pendingOrder && typeof saved.pendingOrder.key === "string" && saved.pendingOrder.data?.qr_token === qrToken) {
+            pendingOrder = saved.pendingOrder;
+            orderMessage.textContent = "O comandă așteaptă confirmare. Apasă Plasează comanda pentru a verifica fără dublare.";
+        }
+    } catch (_) { /* Ignore stale or malformed browser storage. */ }
+    renderCart();
+}
+
+searchInput.addEventListener("input", renderProducts);
 let products = [];
 const productsContainer = document.getElementById("products");
 const cartSection = document.getElementById("cart-section");
@@ -61,7 +91,7 @@ cartDialog.addEventListener("click", function (event) {
 
 mobileView.addEventListener("change", updateCartLayout);
 
-const menuGroups = {
+const defaultGroups = {
     food: [
         "Pizza", "Burgeri", "Paste", "Salate",
         "Garnituri", "Patiserie", "Deserturi"
@@ -71,8 +101,19 @@ const menuGroups = {
     ]
 };
 
+const menuGroups = {food: [], drinks: []};
 let selectedGroup = "food";
-let selectedCategory = "Pizza";
+let selectedCategory = "";
+
+function updateGroups() {
+    const categories = [...new Set(products.map(product => product.category))];
+    menuGroups.drinks = categories.filter(category => defaultGroups.drinks.includes(category));
+    menuGroups.food = categories.filter(category => !menuGroups.drinks.includes(category));
+    foodButton.hidden = menuGroups.food.length === 0;
+    drinksButton.hidden = menuGroups.drinks.length === 0;
+    if (!menuGroups[selectedGroup].length) selectedGroup = menuGroups.food.length ? "food" : "drinks";
+    if (!menuGroups[selectedGroup].includes(selectedCategory)) selectedCategory = menuGroups[selectedGroup][0] || "";
+}
 
 function selectGroup(group) {
     selectedGroup = group;
@@ -96,7 +137,7 @@ async function loadProducts() {
             return;
         }
         products = await response.json();
-        console.log(products);
+        updateGroups();
         renderCategories();
         renderProducts();
     } catch (error) {
@@ -140,15 +181,17 @@ function renderCategories() {
 
 
 function renderProducts() {
-    categoryTitle.textContent = selectedCategory;
+    categoryTitle.textContent = searchInput.value.trim() ? "Rezultatele căutării" : selectedCategory || "Meniu";
     productsContainer.replaceChildren();
 
+    const search = searchInput.value.trim().toLocaleLowerCase("ro");
     for (const product of products) {
-        if (product.category !== selectedCategory) {
+        if (search ? !product.name.toLocaleLowerCase("ro").includes(search) : product.category !== selectedCategory) {
             continue;
         }
         const card = document.createElement("div");
         card.className = "product-card";
+        card.classList.toggle("is-unavailable", product.available !== 1);
         const addButton = document.createElement("button");
         const name = document.createElement("h3");
         const price = document.createElement("p");
@@ -163,22 +206,25 @@ function renderProducts() {
         availability.hidden = product.available === 1;
         addButton.className = "product-add";
         addButton.dataset.available = product.available;
-        addButton.textContent = "Adaugă în coș";
+        const addLabel = document.createElement("span");
+        addLabel.textContent = "Adaugă";
+        addButton.append(addLabel);
         addButton.hidden = !tableIsValid;
         addButton.disabled = product.available !== 1 || isSubmitting;
         addButton.setAttribute("aria-label", "Adaugă " + product.name + " în coș");
         addButton.addEventListener("click", function () {
             addToCart(product);
-            console.log(cart);
-            console.log("Ai ales: " + product.name);
+
         });
         card.append(name, price, availability, addButton);
         productsContainer.append(card);
     }
+    if (!productsContainer.children.length) productsContainer.textContent = "Nu există produse în această selecție.";
 }
 
 
 function renderCart() {
+    saveCart();
     document.querySelector("main").classList.toggle("ordering-enabled", tableIsValid);
     cartSection.hidden = !tableIsValid;
     cartDesktopSlot.hidden = !tableIsValid || mobileView.matches;
@@ -194,10 +240,10 @@ function renderCart() {
     openCartButton.setAttribute("aria-label", "Deschide coșul: " + quantity + " produse, total " + priceFormatter.format(total));
     const focusedProductId = document.activeElement.dataset.productId;
     cartContainer.replaceChildren();
-    placeOrderButton.disabled = cart.length === 0 || isSubmitting || !tableIsValid;
+    placeOrderButton.disabled = (cart.length === 0 && !pendingOrder) || isSubmitting || !tableIsValid;
     placeOrderButton.textContent = isSubmitting ? "Se trimite comanda..." : "Plasează comanda";
     document.querySelectorAll(".product-add").forEach(function (button) {
-        button.disabled = button.dataset.available !== "1" || isSubmitting;
+        button.disabled = button.dataset.available !== "1" || isSubmitting || Boolean(pendingOrder);
     });
     if (cart.length === 0) {
         const emptyMessage = document.createElement("p");
@@ -226,7 +272,7 @@ function renderCart() {
         const decreaseButton = document.createElement("button");
         decreaseButton.className = "quantity-button";
         decreaseButton.textContent = "−";
-        decreaseButton.disabled = isSubmitting;
+        decreaseButton.disabled = isSubmitting || Boolean(pendingOrder);
         decreaseButton.dataset.productId = product.id;
         decreaseButton.setAttribute("aria-label", "Scade cantitatea pentru " + product.name);
 
@@ -249,13 +295,14 @@ function renderCart() {
 
 
 function addToCart(product){
-    if (isSubmitting || !tableIsValid || product.available !== 1) {
+    if (isSubmitting || pendingOrder || !tableIsValid || product.available !== 1) {
         return;
     }
     const existingItem = cart.find(function (item) {
         return item.id === product.id;
     });
     if (existingItem){
+        if (existingItem.quantity >= 99) return;
         existingItem.quantity +=1;
     } else{
         cart.push({
@@ -269,7 +316,7 @@ function addToCart(product){
 }
 
 function decreaseQuantity(productId) {
-    if (isSubmitting) {
+    if (isSubmitting || pendingOrder) {
         return;
     }
     const index = cart.findIndex(function (item) {
@@ -291,7 +338,7 @@ function decreaseQuantity(productId) {
 
 
 
-console.log("Token-ul mesei: ", qrToken);
+
 
 
 async function loadTable(){
@@ -302,7 +349,7 @@ async function loadTable(){
         return;
     }
     try {
-        const response = await fetch("/tables/by-token/" + qrToken);
+        const response = await fetch("/tables/by-token/" + encodeURIComponent(qrToken));
         if (!response.ok) {
             tableInfo.textContent = "Masa nu a fost găsită. Scanează din nou QR-ul.";
             return;
@@ -310,7 +357,6 @@ async function loadTable(){
         const table = await response.json();
         tableInfo.textContent = "Masa " + table.number;
         tableIsValid = true;
-        renderCart();
     } catch (error) {
         console.error(error);
         tableInfo.textContent = "Nu am putut verifica masa. Reîncarcă pagina.";
@@ -321,13 +367,13 @@ async function loadTable(){
 
 
 async function placeOrder() {
-    if (isSubmitting || cart.length === 0 || !tableIsValid){
+    if (isSubmitting || (cart.length === 0 && !pendingOrder) || !tableIsValid){
         return;
     }
     isSubmitting = true;
     renderCart();
     try {
-        const orderData = {
+        const orderData = pendingOrder?.data || {
             qr_token: qrToken,
             items: cart.map(function (product) {
                 return {
@@ -337,29 +383,35 @@ async function placeOrder() {
             })
         };
 
-        console.log("Comanda de trimis:", orderData);
+        if (!pendingOrder) {
+            pendingOrder = {key: Array.from(crypto.getRandomValues(new Uint8Array(24)), b => b.toString(16).padStart(2, "0")).join(""), data: orderData};
+            saveCart();
+        }
         const response = await fetch("/orders", {
             method: "POST",
             headers: {
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                "Idempotency-Key": pendingOrder.key
             },
             body: JSON.stringify(orderData)
         });
 
         const result = await response.json();
-        console.log("Status:", response.status);
-        console.log("Răspuns:", result);
+
         if (!response.ok){
-            alert("Comanda nu a fost trimisa.");
+            if (response.status < 500) pendingOrder = null;
+            orderMessage.textContent = typeof result.detail === "string" ? result.detail : "Comanda nu a fost trimisă. Verifică meniul și încearcă din nou.";
             return;
         }
-        alert("Comanda #" + result.order_id + " a fost plasata!");
+        orderMessage.textContent = "Comanda #" + result.order_id + " a fost plasată! Total: " + priceFormatter.format(result.total) + ". Personalul o va prelua în curând.";
+        pendingOrder = null;
+        if (cartDialog.open) cartDialog.close();
 
         cart.length = 0;
         renderCart();
     } catch(error){
         console.error(error);
-        alert("Nu am putut confirma comanda. Verifică conexiunea.");
+        orderMessage.textContent = "Nu am putut confirma comanda. Încearcă din nou; aceeași comandă nu va fi dublată.";
 
     } finally{
         isSubmitting = false;
@@ -372,7 +424,7 @@ placeOrderButton.addEventListener("click", placeOrder);
 async function init() {
     await loadTable();
     await loadProducts();
+    restoreCart();
 }
 
-updateCartLayout();
-init();
+init().then(updateCartLayout);

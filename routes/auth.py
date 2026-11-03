@@ -1,4 +1,9 @@
 from database import SessionLocal
+from config import COOKIE_SECURE
+from collections import defaultdict, deque
+from threading import Lock
+from time import monotonic
+from security import hash_password
 from schemas import LoginRequest
 from security import verify_password
 from datetime import datetime, timedelta, timezone
@@ -11,13 +16,34 @@ from fastapi import APIRouter, HTTPException, Response, Request
 
 router = APIRouter(prefix = "/auth", tags = ["Autentificare"])
 
+# Single-process local MVP limiter. Use an edge/shared limiter with multiple workers.
+login_attempts = defaultdict(deque)
+login_lock = Lock()
+dummy_hash = hash_password("unused-timing-equalizer")
+
+
+def limit_login(request):
+    address = request.client.host if request.client else "unknown"
+    now = monotonic()
+    with login_lock:
+        for key in list(login_attempts):
+            if not login_attempts[key] or login_attempts[key][-1] <= now - 60:
+                del login_attempts[key]
+        attempts = login_attempts[address]
+        while attempts and attempts[0] <= now - 60:
+            attempts.popleft()
+        if len(attempts) >= 10:
+            raise HTTPException(429, "Prea multe încercări. Așteaptă un minut.", headers={"Retry-After": "60"})
+        attempts.append(now)
+
+
 @router.post("/login")
-def login(data : LoginRequest, response: Response):
+def login(data: LoginRequest, response: Response, request: Request):
+    limit_login(request)
     with SessionLocal() as db:
         user = db.query(StaffUser).filter(StaffUser.username == data.username).first()
-        if user is None or not user.is_active:
-            raise HTTPException(status_code=401, detail = "Username sau parolă incorectă.")
-        if not verify_password(data.password, user.password_hash):
+        password_valid = verify_password(data.password, user.password_hash if user else dummy_hash)
+        if user is None or not user.is_active or not password_valid:
             raise HTTPException(status_code=401, detail = "Username sau parolă incorectă.")
         token = token_urlsafe(32)
         token_hash = sha256(token.encode()).hexdigest()
@@ -28,6 +54,10 @@ def login(data : LoginRequest, response: Response):
             created_at=now,
             expires_at=now + timedelta(hours=8),
         )
+        db.query(StaffSession).filter(StaffSession.expires_at <= now).delete()
+        old_token = request.cookies.get("staff_session")
+        if old_token:
+            db.query(StaffSession).filter(StaffSession.token_hash == sha256(old_token.encode()).hexdigest()).delete()
         db.add(session)
         db.commit()
         response.set_cookie(
@@ -36,7 +66,7 @@ def login(data : LoginRequest, response: Response):
             max_age=8 * 60 * 60,
             httponly=True,
             samesite="strict",
-            secure=False,
+            secure=COOKIE_SECURE,
             path="/",
         )
         response.headers["Cache-Control"] = "no-store"
@@ -72,7 +102,7 @@ def logout(request: Request, response: Response):
         path="/",
         httponly=True,
         samesite="strict",
-        secure=False,
+        secure=COOKIE_SECURE,
     )
     response.headers["Cache-Control"] = "no-store"
 

@@ -35,6 +35,7 @@ class OrderItem(Base):
     id = Column(Integer, primary_key=True)
     order_id = Column(Integer, ForeignKey("orders.id"), nullable=False)
     product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
+    product_name = Column(String, nullable=True)
     quantity = Column(Integer, nullable=False)
     unit_price = Column(Float, nullable=False)
 
@@ -61,3 +62,10 @@ class StaffSession(Base):
         default=lambda: datetime.now(timezone.utc),
     )
     expires_at = Column(DateTime, nullable=False)
+
+class OrderReceipt(Base):
+    __tablename__ = "order_receipts"
+
+    key = Column(String, primary_key=True)
+    payload_hash = Column(String, nullable=False)
+    order_id = Column(Integer, ForeignKey("orders.id"), nullable=False)

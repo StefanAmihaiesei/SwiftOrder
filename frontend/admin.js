@@ -60,11 +60,11 @@ function openProductEditor(product = null, mode = "edit") {
     productEditorTitle.textContent = deleting ? "Șterge produs" : product ? "Editează produs" : "Adaugă produs";
     productName.value = product?.name ?? "";
     const selectedCategory = product?.category ?? "Altele";
-    if (![...productCategory.options].some(option => option.value === selectedCategory)) {
+    if (![...document.getElementById("product-categories").options].some(option => option.value === selectedCategory)) {
         const option = document.createElement("option");
         option.value = selectedCategory;
         option.textContent = selectedCategory;
-        productCategory.append(option);
+        document.getElementById("product-categories").append(option);
     }
     productCategory.value = product?.category ?? "Altele";
     productPrice.value = product?.price ?? "";
@@ -181,8 +181,8 @@ async function loadManagedProducts() {
             categoryFragment.append(option);
         }
         const previousCategory = productCategory.value;
-        productCategory.replaceChildren(categoryFragment);
-        productCategory.value = [...productCategory.options].some(option => option.value === previousCategory)
+        document.getElementById("product-categories").replaceChildren(categoryFragment);
+        productCategory.value = [...document.getElementById("product-categories").options].some(option => option.value === previousCategory)
             ? previousCategory : "Altele";
         for (const product of products) {
             const card = document.createElement("div");

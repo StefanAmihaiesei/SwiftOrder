@@ -4,12 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SwiftOrder — Autentificare</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/style.css?v=bistro-2">
 </head>
-<body>
-    <main>
-        <section>
-            <h1>Autentificare personal</h1>
+<body class="login-page">
+    <main class="login-layout">
+        <div class="login-welcome">
+            <div class="restaurant-brand">
+                <span class="restaurant-logo" aria-hidden="true">R</span>
+                <div><h1>Restaurant Demo</h1><p class="brand-credit">Powered by <strong>SwiftOrder</strong></p></div>
+            </div>
+            <div class="login-greeting">
+                <p class="eyebrow">Spațiul personalului</p>
+                <h2>Bun venit<br><em>în tură.</em></h2>
+                <p>Meniul, mesele și comenzile.<br>Toate la locul lor.</p>
+            </div>
+            <a class="back-to-menu" href="/menu">Înapoi la meniu <span aria-hidden="true">↗</span></a>
+        </div>
+        <section class="login-panel" aria-labelledby="login-title">
+            <p class="eyebrow">Acces personal</p>
+            <h2 id="login-title">Intră în cont</h2>
+            <p class="login-intro">Folosește datele contului tău de personal.</p>
 
             <form id="login-form" method="post" action="/auth/login">
                 <label for="username">Username</label>
@@ -35,6 +49,7 @@
             </form>
         </section>
     </main>
+    <script src="/static/brand.js"></script>
     <script src="/static/login.js"></script>
 </body>
 </html>

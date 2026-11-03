@@ -16,13 +16,12 @@ def get_products():
 
 @router.post("/products", dependencies=[Depends(require_manager)])
 def create_product(product: ProductCreate):
-    db = SessionLocal()
-    new_product = Product(name = product.name, price=product.price, available=product.available, category=product.category)
-    db.add(new_product)
-    db.commit()
-    db.refresh(new_product)
-    db.close()
-    return new_product
+    with SessionLocal() as db:
+        new_product = Product(**product.model_dump())
+        db.add(new_product)
+        db.commit()
+        db.refresh(new_product)
+        return new_product
 
 @router.get("/products/{product_id}")
 def get_product(product_id: int):
